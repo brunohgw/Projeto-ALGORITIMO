@@ -1,7 +1,7 @@
 Nome: Bruno Henrique
-CPF: 123456789
-Sintomas: Febre, Dor no corpo.
+CPF: 12345678
+Sintomas: febre
 Data de Entrada: 08/06/2025
-Hora de Entrada: 19:32
+Hora de Entrada: 20:19
 Hora de Alta: N/A
 ------------------------------

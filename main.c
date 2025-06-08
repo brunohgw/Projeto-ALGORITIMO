@@ -16,6 +16,14 @@ struct Paciente {
     char horaAlta[6];   // HH:MM ou "N/A"
 };
 
+// Nó da lista encadeada
+struct No {
+    struct Paciente dados;
+    struct No *prox;
+};
+
+struct No *inicio = NULL; // Início da lista encadeada
+
 // Remove o '\n' do final das strings
 void tirarEnter(char *texto) {
     int tamanho = strlen(texto);
@@ -36,6 +44,54 @@ void pegarHora(char *hora) {
     time_t agora = time(NULL);
     struct tm *info = localtime(&agora);
     sprintf(hora, "%02d:%02d", info->tm_hour, info->tm_min);
+}
+
+// Insere paciente na lista encadeada
+void inserirNaLista(struct Paciente p) {
+    struct No *novo = (struct No *)malloc(sizeof(struct No));
+    novo->dados = p;
+    novo->prox = NULL;
+
+    if (inicio == NULL) {
+        inicio = novo;
+    } else {
+        struct No *temp = inicio;
+        while (temp->prox != NULL) {
+            temp = temp->prox;
+        }
+        temp->prox = novo;
+    }
+}
+
+// Libera toda a memória alocada da lista
+void liberarLista() {
+    struct No *temp;
+    while (inicio != NULL) {
+        temp = inicio;
+        inicio = inicio->prox;
+        free(temp);
+    }
+}
+
+// Mostra pacientes da lista em memória
+void mostrarPacientesLista() {
+    if (inicio == NULL) {
+        printf("\nNenhum paciente na lista (em memória).\n\n");
+        return;
+    }
+
+    printf("\n=== Lista de Pacientes (em memória) ===\n\n");
+    struct No *temp = inicio;
+    while (temp != NULL) {
+        printf("Nome: %s\n", temp->dados.nome);
+        printf("CPF: %s\n", temp->dados.cpf);
+        printf("Sintomas: %s\n", temp->dados.sintomas);
+        printf("Data de Entrada: %s\n", temp->dados.data);
+        printf("Hora de Entrada: %s\n", temp->dados.hora);
+        printf("Hora de Alta: %s\n", temp->dados.horaAlta);
+        printf("------------------------------\n");
+        temp = temp->prox;
+    }
 }
 
 // Cria a ficha individual do paciente
@@ -59,7 +115,7 @@ void criarFichaPaciente(struct Paciente p) {
     fclose(ficha);
 }
 
-// Cadastra um novo paciente no sistema
+// Cadastra um novo paciente
 void cadastrarPaciente() {
     struct Paciente p;
     FILE *arquivo;
@@ -97,11 +153,12 @@ void cadastrarPaciente() {
     fclose(arquivo);
 
     criarFichaPaciente(p);
+    inserirNaLista(p); // Adiciona à lista em memória
 
     printf("\nPaciente cadastrado com sucesso!\n\n");
 }
 
-// Mostra todos os pacientes cadastrados
+// Mostra pacientes do arquivo
 void mostrarPacientes() {
     FILE *arquivo = fopen(NOME_ARQUIVO, "r");
     char linha[256];
@@ -111,7 +168,7 @@ void mostrarPacientes() {
         return;
     }
 
-    printf("\n=== Lista de Pacientes ===\n\n");
+    printf("\n=== Lista de Pacientes (arquivo) ===\n\n");
     while (fgets(linha, sizeof(linha), arquivo)) {
         printf("%s", linha);
     }
@@ -119,65 +176,7 @@ void mostrarPacientes() {
     printf("\nFim da lista.\n\n");
 }
 
-// Registra a hora de alta de um paciente
-void darAltaPaciente() {
-    char cpfBusca[20];
-    char linha[256];
-    FILE *arquivo = fopen(NOME_ARQUIVO, "r");
-    FILE *temp = fopen(ARQUIVO_TEMPORARIO, "w");
-
-    if (!arquivo || !temp) {
-        printf("Erro ao abrir arquivos!\n");
-        return;
-    }
-
-    printf("Digite o CPF do paciente para registrar a alta: ");
-    fgets(cpfBusca, sizeof(cpfBusca), stdin);
-    tirarEnter(cpfBusca);
-
-    int encontrou = 0;
-    while (fgets(linha, sizeof(linha), arquivo)) {
-        if (strncmp(linha, "CPF: ", 5) == 0 && strstr(linha, cpfBusca)) {
-            encontrou = 1;
-        }
-
-        if (strncmp(linha, "Hora de Alta: ", 14) == 0 && encontrou) {
-            char horaAlta[6];
-            pegarHora(horaAlta);
-            fprintf(temp, "Hora de Alta: %s\n", horaAlta);
-            encontrou = 0;
-
-            // Atualiza também a ficha individual
-            char nomeArquivo[40];
-            sprintf(nomeArquivo, "ficha_%s.txt", cpfBusca);
-            FILE *ficha = fopen(nomeArquivo, "r+");
-            if (ficha) {
-                char conteudo[1000] = "";
-                char linhaFicha[200];
-                while (fgets(linhaFicha, sizeof(linhaFicha), ficha)) {
-                    if (strncmp(linhaFicha, "Hora de Alta: ", 14) == 0) {
-                        sprintf(linhaFicha, "Hora de Alta: %s\n", horaAlta);
-                    }
-                    strcat(conteudo, linhaFicha);
-                }
-                freopen(nomeArquivo, "w", ficha);
-                fputs(conteudo, ficha);
-                fclose(ficha);
-            }
-        } else {
-            fputs(linha, temp);
-        }
-    }
-
-    fclose(arquivo);
-    fclose(temp);
-    remove(NOME_ARQUIVO);
-    rename(ARQUIVO_TEMPORARIO, NOME_ARQUIVO);
-
-    printf("\nAlta registrada com sucesso!\n\n");
-}
-
-// Exclui paciente e sua ficha
+// Exclui paciente do arquivo e remove a ficha
 void excluirPaciente() {
     char cpfBusca[20], linha[256];
     FILE *arquivo = fopen(NOME_ARQUIVO, "r");
@@ -213,7 +212,6 @@ void excluirPaciente() {
     remove(NOME_ARQUIVO);
     rename(ARQUIVO_TEMPORARIO, NOME_ARQUIVO);
 
-    // Remove também a ficha individual do paciente
     char nomeArquivo[40];
     sprintf(nomeArquivo, "ficha_%s.txt", cpfBusca);
     remove(nomeArquivo);
@@ -252,8 +250,8 @@ int main() {
     do {
         printf("===== SISTEMA DE CADASTRO DE PACIENTES =====\n");
         printf("1 - Cadastrar novo paciente\n");
-        printf("2 - Mostrar pacientes cadastrados\n");
-        printf("3 - Registrar alta do paciente\n");
+        printf("2 - Mostrar pacientes do arquivo\n");
+        printf("3 - Mostrar pacientes em memoria\n");
         printf("4 - Excluir paciente\n");
         printf("5 - Ver ficha do paciente\n");
         printf("6 - Sair\n");
@@ -264,13 +262,17 @@ int main() {
         switch (opcao) {
             case 1: cadastrarPaciente(); break;
             case 2: mostrarPacientes(); break;
-            case 3: darAltaPaciente(); break;
+            case 3: mostrarPacientesLista(); break;
             case 4: excluirPaciente(); break;
             case 5: verFichaPaciente(); break;
-            case 6: printf("\nSaindo do sistema...\n"); break;
-            default: printf("\nOpção inválida! Tente novamente.\n\n");
+            case 6:
+                liberarLista();
+                printf("\nSaindo do sistema...\n");
+                break;
+            default: printf("\nOpcao inválida! Tente novamente.\n\n");
         }
     } while (opcao != 6);
 
     return 0;
 }
+
