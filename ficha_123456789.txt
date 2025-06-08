@@ -1,7 +1,7 @@
+=== FICHA DO PACIENTE ===
 Nome: Bruno Henrique
 CPF: 123456789
 Sintomas: Febre, Dor no corpo.
 Data de Entrada: 08/06/2025
 Hora de Entrada: 19:32
 Hora de Alta: N/A
-------------------------------
