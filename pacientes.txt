@@ -1,0 +1,14 @@
+Nome: Bruno
+CPF: 1231231231
+Sintomas: Dor muscular
+Data de Entrada: 08/06/2025
+Hora de Entrada: 03:12
+------------------------------
+Nome: Bruno
+Nome: Bruno Henrique
+CPF: 06139445507
+Sintomas: febre, dor no corpo
+Data de Entrada: 08/06/2025
+Hora de Entrada: 18:54
+Hora de Alta: 18:55
+------------------------------
